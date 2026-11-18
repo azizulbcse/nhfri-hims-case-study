@@ -33,10 +33,11 @@ to a modern web application.
 
 ## 🏢 Background
 
-Since **2014**, I've been the developer behind this hospital's in-house **desktop
-Hospital Management System** (C# WinForms, Visual Studio, SQL Server) — a
+Since **2014**, I've been one of the core developers on this hospital's in-house
+**desktop Hospital Management System** (C# WinForms, Visual Studio, SQL Server) — a
 **34-module** solution still running in production across **two hospital branches**
-today, including:
+today. I've personally built and maintained roughly **60%** of these modules,
+including:
 
 | Area | Modules |
 |---|---|
@@ -89,7 +90,7 @@ production data, real concurrent users, and zero tolerance for downtime.
 | | |
 |---|---|
 | 🏥 **10+ years** | building this hospital's software, 2014–present |
-| 🧩 **34 modules** | in the legacy desktop HMS, across 2 branches |
+| 🧩 **~60% of 34 modules** | personally built in the legacy desktop HMS, across 2 branches |
 | 🎫 **13,000+** | live complaint records handled by the rebuilt helpdesk |
 | 📢 **2,200+** | live notices migrated to the new public-facing system |
 | 🔒 **1 critical PII leak** | found and closed during an independent security review |
