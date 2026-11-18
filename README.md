@@ -4,7 +4,7 @@
 ### Hospital Information Management System — Legacy-to-Web Migration
 
 A full-stack case study from my work building and migrating a hospital's
-operations software — from a 34-module desktop system I've maintained since 2014,
+operations software — from a 34-module desktop system I've co-developed since 2014,
 to a modern web application.
 
 [![Next.js](https://img.shields.io/badge/Next.js_14-000000?style=for-the-badge&logo=next.js&logoColor=white)](#)
@@ -36,7 +36,7 @@ to a modern web application.
 Since **2014**, I've been one of the core developers on this hospital's in-house
 **desktop Hospital Management System** (C# WinForms, Visual Studio, SQL Server) — a
 **34-module** solution still running in production across **two hospital branches**
-today. I've personally built and maintained roughly **60%** of these modules,
+today. I've personally built and maintained the majority of these modules,
 including:
 
 | Area | Modules |
@@ -90,7 +90,7 @@ production data, real concurrent users, and zero tolerance for downtime.
 | | |
 |---|---|
 | 🏥 **10+ years** | building this hospital's software, 2014–present |
-| 🧩 **~60% of 34 modules** | personally built in the legacy desktop HMS, across 2 branches |
+| 🧩 **34-module system** | the majority personally built, in the legacy desktop HMS across 2 branches |
 | 🎫 **13,000+** | live complaint records handled by the rebuilt helpdesk |
 | 📢 **2,200+** | live notices migrated to the new public-facing system |
 | 🔒 **1 critical PII leak** | found and closed during an independent security review |
