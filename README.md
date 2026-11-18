@@ -22,12 +22,14 @@ to a modern web application.
 
 - [Background](#-background)
 - [Web Migration — Overview](#-web-migration--overview)
+- [System Architecture](#-system-architecture)
 - [My Role](#-my-role)
 - [Tech Stack](#-tech-stack)
 - [Impact at a Glance](#-impact-at-a-glance)
 - [Modules Delivered](#-modules-delivered)
 - [Security & Reliability Highlights](#-security--reliability-highlights)
 - [Note on Scope](#-note-on-scope)
+- [Let's Connect](#-lets-connect)
 
 ---
 
@@ -63,6 +65,35 @@ migration.
 its day-to-day hospital operations software to a modern web application — Next.js
 on the frontend, ASP.NET Core on the backend — rebuilding each module with real
 production data, real concurrent users, and zero tolerance for downtime.
+
+## 🏗️ System Architecture
+
+Both the new web stack and the legacy systems (desktop HMS + classic ASPX
+screens) write directly to the **same production Oracle database** — every new
+feature has to coexist safely with writers it doesn't control, which shapes
+most of the concurrency patterns throughout this project.
+
+```mermaid
+graph LR
+    subgraph Client["Client"]
+        A["Next.js 14 (App Router)<br/>React + Tailwind CSS"]
+    end
+    subgraph Server["Server"]
+        B["ASP.NET Core Web API<br/>Clean Architecture + Dapper"]
+    end
+    subgraph Data["Data"]
+        C[("Oracle 11g<br/>Production Database")]
+    end
+    subgraph Legacy["Still-Running Legacy Systems"]
+        D["Classic ASPX Screens"]
+        E["C# WinForms Desktop HMS<br/>34 modules, since 2014"]
+    end
+
+    A -- "REST / JSON" --> B
+    B -- "parameterized SQL" --> C
+    D -- "direct writes" --> C
+    E -- "direct writes" --> C
+```
 
 ## 👨‍💻 My Role
 
@@ -143,7 +174,14 @@ production data, real concurrent users, and zero tolerance for downtime.
 
 - **Book Appointment** — walk-in booking reverse-engineered from a legacy ASPX
   screen, built to stay write-compatible with it (handles concurrent-insert
-  collisions on a table both apps write to).
+  collisions on a table both apps write to); enforces a hard, race-condition-safe
+  capacity cap against the generated slot schedule, and flags cross-doctor
+  duplicate bookings for staff without blocking them.
+- **Patient lookup & admission workflow** — mobile/Patient-ID autofill against
+  full appointment history (not just the current day), a same-day "Admit
+  Request" action server-enforced to apply only to today's entries, and a
+  standalone lookup so staff can verify a patient's claimed booking by phone
+  number alone.
 - **Appointment Date Switch** — a single-row "current booking date" control used
   hospital-wide, redesigned with a complete, append-only audit trail, without
   altering the existing production table.
@@ -151,6 +189,11 @@ production data, real concurrent users, and zero tolerance for downtime.
   per-doctor daily appointment slots from a start time, interval, and patient count.
 - **Consultant Management** — admin CRUD mapping hospital staff to the "active
   consultants" used across every booking module.
+- **SMS notifications** — a reusable, provider-agnostic SMS sending/logging
+  service (behind a third-party gateway), triggered on booking confirmation and
+  on admission requests; every attempt is logged for traceability, and the
+  gateway call is fully isolated so a delivery failure can never turn an
+  already-successful booking into a false failure response.
 
 </details>
 
@@ -206,17 +249,31 @@ production data, real concurrent users, and zero tolerance for downtime.
   identity checks, and PII exposure before each feature's public launch.
 - ⚔️ **Concurrency-safe against legacy systems** — tables written to by both the
   new app and still-running legacy systems use table-level locking plus
-  retry-on-collision, instead of assuming exclusive ownership.
+  retry-on-collision, instead of assuming exclusive ownership; business
+  invariants (like a hard appointment-slot capacity cap) are checked inside
+  that same locked transaction so they can never be raced past.
 - 🔒 **Additive-only database changes** — every schema change on the live
   production database was designed to never alter or drop an existing column or
   table.
 - 🔍 **Root-caused, not patched** — silent save failures, misreported insert
   failures, duplicate IDs, and a timezone off-by-one were all traced to their
   actual root cause rather than worked around.
+- 🧱 **External-dependency isolation** — the third-party SMS gateway integration
+  is wrapped so a delivery failure there can never cascade into a false failure
+  on the underlying booking/admission API call.
 
 ## 📝 Note on Scope
 
 > This repository is a **written case study** of work delivered across these
 > projects — it does not contain the hospital's source code, data, or internal
 > infrastructure details.
+
+## 🤝 Let's Connect
+
+I'm actively building production software across ERP, HIMS, and accounting
+systems — happy to talk about this project, a role, or a new build.
+
+- 💼 **LinkedIn**: [linkedin.com/in/azizulhaquesohel](https://www.linkedin.com/in/azizulhaquesohel/)
+- 📧 **Email**: [azizulbcse@gmail.com](mailto:azizulbcse@gmail.com)
+- 🐙 **GitHub**: [@azizulbcse](https://github.com/azizulbcse)
 
