@@ -212,6 +212,25 @@ graph LR
 
 </details>
 
+### 🛏️ Live Bed Statement
+
+<details>
+<summary><b>Public ward/cabin occupancy board, no login required</b></summary>
+
+- Ward/cabin-wise Total/Occupied/Empty bed counts for both hospital branches, read
+  live off existing Oracle reporting views — a public, no-login page for a quick
+  glance, plus a themed version embedded in the authenticated dashboard, both built
+  on one shared data-fetching hook instead of duplicating the polling logic.
+- Auto-refreshes every 30s without blocking the UI: pauses while the browser tab is
+  backgrounded and catches up instantly on refocus; a failed refresh keeps the last
+  good data on screen with a stale-data notice, rather than blanking the view.
+- Along the way, found and fixed two real backend bugs: a menu-creation endpoint
+  that always reported failure because it read a result from an Oracle INSERT
+  that had no RETURNING clause, and an ORA-01785 from ordering a UNION ALL
+  query by a derived CASE expression instead of a plain output column.
+
+</details>
+
 ### 🧩 IT Asset Tracking *(early stage)*
 
 <details>
