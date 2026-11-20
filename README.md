@@ -12,7 +12,7 @@ to a modern web application.
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](#)
 [![ASP.NET Core](https://img.shields.io/badge/ASP.NET_Core-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)](#)
 [![C#](https://img.shields.io/badge/C%23-239120?style=for-the-badge&logo=csharp&logoColor=white)](#)
-[![Oracle](https://img.shields.io/badge/Oracle_11g-F80000?style=for-the-badge&logo=oracle&logoColor=white)](#)
+[![Oracle](https://img.shields.io/badge/Oracle-F80000?style=for-the-badge&logo=oracle&logoColor=white)](#)
 
 </div>
 
@@ -69,7 +69,7 @@ production data, real concurrent users, and zero tolerance for downtime.
 ## 🏗️ System Architecture
 
 Both the new web stack and the legacy systems (desktop HMS + classic ASPX
-screens) write directly to the **same production Oracle database** — every new
+screens) write directly to the **same production relational database** — every new
 feature has to coexist safely with writers it doesn't control, which shapes
 most of the concurrency patterns throughout this project.
 
@@ -82,7 +82,7 @@ graph LR
         B["ASP.NET Core Web API<br/>Clean Architecture + Dapper"]
     end
     subgraph Data["Data"]
-        C[("Oracle 11g<br/>Production Database")]
+        C[("Production Database")]
     end
     subgraph Legacy["Still-Running Legacy Systems"]
         D["Classic ASPX Screens"]
@@ -99,7 +99,7 @@ graph LR
 
 **Full-stack developer**, owning features end-to-end:
 
-- Additive schema changes on a **live Oracle database**, never breaking the legacy
+- Additive schema changes on a **live production database**, never breaking the legacy
   systems (desktop HMS, classic ASPX apps) still running against it
 - REST APIs following Clean Architecture (Domain / Application / Infrastructure)
 - The corresponding Next.js / React interface, built for non-technical hospital
@@ -112,7 +112,7 @@ graph LR
 |---|---|
 | **Frontend** | Next.js 14 (App Router), React, Tailwind CSS |
 | **Backend** | ASP.NET Core Web API, Clean Architecture, Dapper |
-| **Database** | Oracle 11g |
+| **Database** | Oracle |
 | **Legacy stack (since 2014)** | C# WinForms, Classic ASP.NET, SQL Server |
 | **Patterns** | Repository + Unit of Work, lock-and-retry for tables shared with legacy systems |
 
@@ -122,9 +122,8 @@ graph LR
 |---|---|
 | 🏥 **10+ years** | building this hospital's software, 2014–present |
 | 🧩 **34-module system** | the majority personally built, in the legacy desktop HMS across 2 branches |
-| 🎫 **13,000+** | live complaint records handled by the rebuilt helpdesk |
-| 📢 **2,200+** | live notices migrated to the new public-facing system |
-| 🔒 **1 critical PII leak** | found and closed during an independent security review |
+| 🎫 **Tens of thousands** | of live complaint records handled by the rebuilt helpdesk |
+| 📢 **Thousands** | of live notices migrated to the new public-facing system |
 
 ## 🚀 Modules Delivered
 
@@ -142,7 +141,7 @@ graph LR
   change (who, when, what the text used to say), restricted to the original author
   or an admin.
 - Hardened in a dedicated security pass: added missing author-or-admin checks on
-  four endpoints that had none, restricted creation to active staff only, fixed a
+  several endpoints that had none, restricted creation to active staff only, fixed a
   race condition in concurrent view-counting.
 
 </details>
@@ -156,13 +155,12 @@ graph LR
   priority levels, and status lookup by ticket number or QR code.
 - **Printable complaint slips** reusing the app's existing letterhead print
   pipeline, with an embedded QR code linking straight to the ticket's live status.
-- **Critical PII leak found and fixed**: the public page was downloading the
-  hospital's entire complaint table — 13,000+ records, 12,800+ of them containing
-  the reporter's name and phone number — to every visitor's browser, unauthenticated,
-  and filtering it client-side. Replaced with three purpose-built, server-filtered
-  endpoints that never return personal data.
-- Diagnosed and fixed three backend bugs causing every complaint's status to read
-  as blank; fixed a duplicate-ticket-number bug caused by two different systems
+- **Found and closed a data-exposure issue**: a public page was fetching the
+  full complaint dataset and filtering it client-side, incidentally exposing
+  reporters' personal contact details to any visitor. Replaced with
+  purpose-built, server-filtered endpoints that never return personal data.
+- Diagnosed and fixed several backend bugs causing complaint statuses to read
+  incorrectly, and a duplicate-ticket-number bug caused by two different systems
   writing to the same table with incompatible numbering schemes.
 
 </details>
@@ -204,11 +202,10 @@ graph LR
 
 - Rebuilt the public homepage from a generic marketing template into a real staff
   portal — live OPD/IPD/CAG/CABG counts, module shortcuts, an announcements board —
-  while fixing a security issue where it had been showing real patient/billing data
-  without login.
+  while closing an access-control gap that had exposed data without login.
 - Dashboard redesigned for performance: independently-loading cards instead of one
   blocking request, server-side pagination + infinite scroll replacing a widget that
-  was pulling an entire 13,000+ row table just to show the latest 10 entries.
+  was pulling a large legacy table just to show the latest 10 entries.
 
 </details>
 
@@ -218,16 +215,15 @@ graph LR
 <summary><b>Public ward/cabin occupancy board, no login required</b></summary>
 
 - Ward/cabin-wise Total/Occupied/Empty bed counts for both hospital branches, read
-  live off existing Oracle reporting views — a public, no-login page for a quick
+  live off existing reporting views — a public, no-login page for a quick
   glance, plus a themed version embedded in the authenticated dashboard, both built
   on one shared data-fetching hook instead of duplicating the polling logic.
 - Auto-refreshes every 30s without blocking the UI: pauses while the browser tab is
   backgrounded and catches up instantly on refocus; a failed refresh keeps the last
   good data on screen with a stale-data notice, rather than blanking the view.
 - Along the way, found and fixed two real backend bugs: a menu-creation endpoint
-  that always reported failure because it read a result from an Oracle INSERT
-  that had no RETURNING clause, and an ORA-01785 from ordering a UNION ALL
-  query by a derived CASE expression instead of a plain output column.
+  that always reported failure due to a database-driver quirk around how it read
+  back an insert's result, and a query-ordering bug affecting a multi-branch report.
 
 </details>
 
@@ -246,11 +242,11 @@ graph LR
 ### ⚙️ Platform Engineering
 
 <details>
-<summary><b>Menu/permissions system, Oracle driver bugs, branch master data</b></summary>
+<summary><b>Menu/permissions system, database driver bugs, branch master data</b></summary>
 
-- Diagnosed and fixed an Oracle parameter-binding bug (missing `BindByName`)
-  causing silent data corruption across multiple admin screens — shipped a reusable
-  wrapper to prevent it recurring.
+- Diagnosed and fixed a database parameter-binding bug causing silent data
+  corruption across multiple admin screens — shipped a reusable wrapper to
+  prevent it recurring.
 - Designed a dynamic, database-driven menu + role-permission system so new pages
   can be wired up without a deployment.
 - Introduced a proper master-data table for hospital branches, replacing an
@@ -260,12 +256,12 @@ graph LR
 
 ## 🔒 Security & Reliability Highlights
 
-- 🔐 **Found and closed a live PII leak** — a public page was exposing 13,000+
-  patients' and staff's names and phone numbers before login; replaced with
+- 🔐 **Found and closed a data-exposure issue** — a public page was exposing
+  patients' and staff's personal contact details before login; replaced with
   properly scoped, server-filtered endpoints.
 - 🕵️ **Independent security reviews** — ran dedicated review passes (treating my
   own feature work adversarially) that caught authorization gaps, spoofable
-  identity checks, and PII exposure before each feature's public launch.
+  identity checks, and data-exposure risks before each feature's public launch.
 - ⚔️ **Concurrency-safe against legacy systems** — tables written to by both the
   new app and still-running legacy systems use table-level locking plus
   retry-on-collision, instead of assuming exclusive ownership; business
@@ -284,8 +280,8 @@ graph LR
 ## 📝 Note on Scope
 
 > This repository is a **written case study** of work delivered across these
-> projects — it does not contain the hospital's source code, data, or internal
-> infrastructure details.
+> projects — it does not contain the hospital's source code, data, specific
+> technology versions, or internal infrastructure details.
 
 ## 🤝 Let's Connect
 
@@ -295,4 +291,3 @@ systems — happy to talk about this project, a role, or a new build.
 - 💼 **LinkedIn**: [linkedin.com/in/azizulhaquesohel](https://www.linkedin.com/in/azizulhaquesohel/)
 - 📧 **Email**: [azizulbcse@gmail.com](mailto:azizulbcse@gmail.com)
 - 🐙 **GitHub**: [@azizulbcse](https://github.com/azizulbcse)
-
