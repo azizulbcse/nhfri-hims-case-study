@@ -27,7 +27,7 @@ to a modern web application.
 - [Tech Stack](#-tech-stack)
 - [Impact at a Glance](#-impact-at-a-glance)
 - [Modules Delivered](#-modules-delivered)
-- [Security & Reliability Highlights](#-security--reliability-highlights)
+- [Engineering & Reliability Highlights](#-engineering--reliability-highlights)
 - [Note on Scope](#-note-on-scope)
 - [Let's Connect](#-lets-connect)
 
@@ -68,8 +68,7 @@ production data, real concurrent users, and zero tolerance for downtime.
 
 ## 🏗️ System Architecture
 
-Both the new web stack and the legacy systems (desktop HMS + classic ASPX
-screens) write directly to the **same production relational database** — every new
+Both the new web stack and the legacy systems write directly to the **same production relational database** — every new
 feature has to coexist safely with writers it doesn't control, which shapes
 most of the concurrency patterns throughout this project.
 
@@ -85,7 +84,7 @@ graph LR
         C[("Production Database")]
     end
     subgraph Legacy["Still-Running Legacy Systems"]
-        D["Classic ASPX Screens"]
+        D["Legacy Web Screens"]
         E["C# WinForms Desktop HMS<br/>34 modules, since 2014"]
     end
 
@@ -100,11 +99,11 @@ graph LR
 **Full-stack developer**, owning features end-to-end:
 
 - Additive schema changes on a **live production database**, never breaking the legacy
-  systems (desktop HMS, classic ASPX apps) still running against it
+  systems still running against it
 - REST APIs following Clean Architecture (Domain / Application / Infrastructure)
 - The corresponding Next.js / React interface, built for non-technical hospital
   staff and the public
-- Independent security reviews of features before they go live
+- A security and privacy review of every feature before it goes live
 
 ## 🛠️ Tech Stack
 
@@ -120,7 +119,7 @@ graph LR
 
 | | |
 |---|---|
-| 🏥 **10+ years** | building this hospital's software, 2014–present |
+| 🏥 **12 years** | building this hospital's software, 2014–present |
 | 🧩 **34-module system** | the majority personally built, in the legacy desktop HMS across 2 branches |
 | 🎫 **Tens of thousands** | of live complaint records handled by the rebuilt helpdesk |
 | 📢 **Thousands** | of live notices migrated to the new public-facing system |
@@ -132,7 +131,7 @@ graph LR
 <details>
 <summary><b>Public notice board, view-tracking, full audit history</b></summary>
 
-- Public, no-login notice board (`/notices`) replacing a login-only legacy screen —
+- Public, no-login notice board replacing a login-only legacy screen —
   search, date filters, "new" badges tracked per visitor, attachment preview.
 - **View-tracking** ("who's seen this") for both staff and public visitors, joined
   against existing device/employee records rather than adding new tracking
@@ -140,28 +139,24 @@ graph LR
 - **Edit / Close / Reopen with full audit trail** — a new audit table records every
   change (who, when, what the text used to say), restricted to the original author
   or an admin.
-- Hardened in a dedicated security pass: added missing author-or-admin checks on
-  several endpoints that had none, restricted creation to active staff only, fixed a
-  race condition in concurrent view-counting.
+- Role-based permissions throughout: only active staff can post, only the author
+  or an admin can edit, and view-counting stays correct under concurrent use.
 
 </details>
 
 ### 🎫 Complaint / Helpdesk System
 
 <details>
-<summary><b>Public ticketing, QR verification, print slips, full security review</b></summary>
+<summary><b>Public ticketing, QR verification, print slips, privacy-first design</b></summary>
 
-- Public ticket submission (`/complaints`) with branch + department routing,
+- Public ticket submission with branch + department routing,
   priority levels, and status lookup by ticket number or QR code.
 - **Printable complaint slips** reusing the app's existing letterhead print
   pipeline, with an embedded QR code linking straight to the ticket's live status.
-- **Found and closed a data-exposure issue**: a public page was fetching the
-  full complaint dataset and filtering it client-side, incidentally exposing
-  reporters' personal contact details to any visitor. Replaced with
-  purpose-built, server-filtered endpoints that never return personal data.
-- Diagnosed and fixed several backend bugs causing complaint statuses to read
-  incorrectly, and a duplicate-ticket-number bug caused by two different systems
-  writing to the same table with incompatible numbering schemes.
+- **Privacy-first public pages**: purpose-built, server-filtered endpoints that
+  return only what a visitor needs and never any personal data.
+- **Consistent ticket numbering** shared safely between the new app and the legacy
+  screens that write to the same records.
 
 </details>
 
@@ -170,7 +165,7 @@ graph LR
 <details>
 <summary><b>Booking, a hospital-wide date switch, and a slot-scheduling tool</b></summary>
 
-- **Book Appointment** — walk-in booking reverse-engineered from a legacy ASPX
+- **Book Appointment** — walk-in booking rebuilt from a legacy booking
   screen, built to stay write-compatible with it (handles concurrent-insert
   collisions on a table both apps write to); enforces a hard, race-condition-safe
   capacity cap against the generated slot schedule, and flags cross-doctor
@@ -201,11 +196,11 @@ graph LR
 <summary><b>Public staff portal, performance-first dashboard</b></summary>
 
 - Rebuilt the public homepage from a generic marketing template into a real staff
-  portal — live OPD/IPD/CAG/CABG counts, module shortcuts, an announcements board —
-  while closing an access-control gap that had exposed data without login.
+  portal — live OPD/IPD/CAG/CABG counts, module shortcuts and an announcements board,
+  with operational data kept behind sign-in.
 - Dashboard redesigned for performance: independently-loading cards instead of one
-  blocking request, server-side pagination + infinite scroll replacing a widget that
-  was pulling a large legacy table just to show the latest 10 entries.
+  blocking request, and server-side pagination + infinite scroll so each widget loads
+  only the rows it shows.
 
 </details>
 
@@ -221,9 +216,6 @@ graph LR
 - Auto-refreshes every 30s without blocking the UI: pauses while the browser tab is
   backgrounded and catches up instantly on refocus; a failed refresh keeps the last
   good data on screen with a stale-data notice, rather than blanking the view.
-- Along the way, found and fixed two real backend bugs: a menu-creation endpoint
-  that always reported failure due to a database-driver quirk around how it read
-  back an insert's result, and a query-ordering bug affecting a multi-branch report.
 
 </details>
 
@@ -242,11 +234,10 @@ graph LR
 ### ⚙️ Platform Engineering
 
 <details>
-<summary><b>Menu/permissions system, database driver bugs, branch master data</b></summary>
+<summary><b>Menu/permissions system, data-access layer, branch master data</b></summary>
 
-- Diagnosed and fixed a database parameter-binding bug causing silent data
-  corruption across multiple admin screens — shipped a reusable wrapper to
-  prevent it recurring.
+- A reusable data-access wrapper that standardises parameter binding across
+  admin screens, so every query is built the same safe way.
 - Designed a dynamic, database-driven menu + role-permission system so new pages
   can be wired up without a deployment.
 - Introduced a proper master-data table for hospital branches, replacing an
@@ -254,14 +245,12 @@ graph LR
 
 </details>
 
-## 🔒 Security & Reliability Highlights
+## 🔒 Engineering & Reliability Highlights
 
-- 🔐 **Found and closed a data-exposure issue** — a public page was exposing
-  patients' and staff's personal contact details before login; replaced with
-  properly scoped, server-filtered endpoints.
-- 🕵️ **Independent security reviews** — ran dedicated review passes (treating my
-  own feature work adversarially) that caught authorization gaps, spoofable
-  identity checks, and data-exposure risks before each feature's public launch.
+- 🔐 **Privacy by design** — public pages use purpose-built, server-filtered
+  endpoints and never return personal data.
+- 🕵️ **Review before launch** — every feature gets a dedicated security and privacy
+  review (authorization, input validation, data minimisation) before it goes public.
 - ⚔️ **Concurrency-safe against legacy systems** — tables written to by both the
   new app and still-running legacy systems use table-level locking plus
   retry-on-collision, instead of assuming exclusive ownership; business
@@ -270,9 +259,8 @@ graph LR
 - 🔒 **Additive-only database changes** — every schema change on the live
   production database was designed to never alter or drop an existing column or
   table.
-- 🔍 **Root-caused, not patched** — silent save failures, misreported insert
-  failures, duplicate IDs, and a timezone off-by-one were all traced to their
-  actual root cause rather than worked around.
+- 🔍 **Root-caused, not patched** — issues are traced to their actual cause and
+  fixed there, rather than worked around.
 - 🧱 **External-dependency isolation** — the third-party SMS gateway integration
   is wrapped so a delivery failure there can never cascade into a false failure
   on the underlying booking/admission API call.
