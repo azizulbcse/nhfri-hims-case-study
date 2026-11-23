@@ -227,6 +227,34 @@ graph LR
 
 </details>
 
+### 🎓 ECG Bonanza — Live Conference Quiz
+
+<details>
+<summary><b>Standalone real-time quiz tool: QR join, anonymous participants, live leaderboard</b></summary>
+
+- Built a self-contained, conference-ready quiz application end-to-end for a
+  medical conference — a login-protected admin side, and fully anonymous
+  student / projector views reachable only by a join code or QR, with zero impact
+  on the main application's navigation or permissions.
+- **Race-free live timing** — every client (admin monitor, projector display,
+  each participant's phone) independently computes the current question, phase,
+  and remaining time from a single stored start timestamp on each poll; no write
+  ever advances the session state, so concurrent polling from dozens of devices
+  can never desync or double-fire a transition.
+- **Anti-cheat by construction** — the correct answer for a question is never
+  present in any response while that question is still live; a dedicated
+  adversarial review pass (reviewing my own feature against itself) caught and
+  closed a subtler leak where a submission's own response quietly confirmed
+  correctness before the round had closed.
+- Automatic scoring with a time-based tiebreaker, duplicate-submission and
+  re-join handling (a dropped connection resumes the same participant instead of
+  being rejected), and a printable results / leaderboard page.
+- A **super-admin-gated reset** to wipe all quiz data between events, enforced
+  both in the UI and independently on the server, so a forged request from a
+  non-admin account is rejected even if the control were somehow reached.
+
+</details>
+
 ### 🧩 IT Asset Tracking *(early stage)*
 
 <details>
